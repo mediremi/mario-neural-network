@@ -2,7 +2,6 @@
 // Author: Patrick Walton
 //
 
-use apu::Apu;
 use input::Input;
 use mapper::Mapper;
 use ppu::Ppu;
