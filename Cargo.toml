@@ -1,0 +1,14 @@
+[package]
+
+name = "sprocketnes"
+version = "0.1.0"
+authors = [ "pcwalton@mimiga.net" ]
+
+[lib]
+name = "nes"
+
+[dependencies]
+sdl2 = "0.32.1"
+time = "*"
+libc = "*"
+lazy_static = "*"
