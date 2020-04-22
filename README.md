@@ -1,53 +1,23 @@
-`sprocketnes` is an emulator for the Nintendo Entertainment System written in
-the Rust programming language.
+# Super Mario Bros neural network
 
-Its purpose is to serve as a *technology demonstration* to show how the Rust
-programming language is suitable for systems software such as emulators. It
-has many shortcomings and is not intended to be a production-quality emulator.
-`sprocketnes` is also designed to be a relatively clean example codebase,
-showing off various Rust idioms.
+Based on [MarI/O](https://www.youtube.com/watch?v=qv6UVOQ0F44) by [SethBling](https://www.youtube.com/channel/UC8aG3LDTDwNR1UQhSn9uVrw).
 
-The NES was chosen for this project because:
+(put GIF here)
 
-* It's familiar to most hackers.
+# Building
 
-* It's a reasonably simple system to emulate.
+    cargo build --release
 
-* Because of its popularity, its workings are relatively well-documented.
+# NES emulator code
 
-* It's CPU-bound, so it can serve as a benchmark to help optimize Rust code.
+NES emulator related code is from
+[sprocketnes](https://github.com/pcwalton/sprocketnes) by Patrick Walton.
 
-* The audio requires some measure of real-time operation, which tests Rust's
-  real-time capabilities.
+# Resources
 
-The main controls are as follows:
-
-* A: Z
-
-* B: X
-
-* Start: Enter
-
-* Select: Right shift
-
-* D-Pad: Arrows
-
-Other keys:
-
-* Save state: S
-
-* Load state: L
-
-* Quit: Escape
-
-If you want to build `sprocketnes`, you will first need the Speex codec library
-installed; on the Mac you can install it with `brew install speex`.
-
-To build (add `--release` if you actually want playable speed):
-
-    cargo build
-
-There are numerous demos and games available for free for use with this
-emulator at http://nesdev.com/.
-
-Enjoy!
+* [NEAT](http://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf)
+* [MarI/O](https://www.youtube.com/watch?v=qv6UVOQ0F44)
+* https://en.wikipedia.org/wiki/Neuroevolution
+* https://en.wikipedia.org/wiki/Evolutionary_algorithm
+* https://en.wikipedia.org/wiki/Artificial_neural_network
+* [Genetic algorithms](https://www.youtube.com/watch?v=9c1qo1eU1kY)

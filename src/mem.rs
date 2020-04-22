@@ -85,7 +85,6 @@ pub struct MemMap {
     pub ppu: Ppu,
     pub input: Input,
     pub mapper: Rc<RefCell<Box<dyn Mapper + Send>>>,
-    // pub apu: Apu,
 }
 
 impl MemMap {
@@ -141,5 +140,4 @@ impl Mem for MemMap {
     }
 }
 
-// save_struct!(MemMap { ram, ppu, apu });
 save_struct!(MemMap { ram, ppu });

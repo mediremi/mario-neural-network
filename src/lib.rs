@@ -4,7 +4,6 @@
 
 extern crate libc;
 extern crate sdl2;
-extern crate time;
 
 // NB: This must be first to pick up the macro definitions. What a botch.
 #[macro_use]
@@ -12,6 +11,7 @@ pub mod util;
 
 #[macro_use]
 pub mod cpu;
+pub mod ai;
 pub mod disasm;
 pub mod gfx;
 pub mod input;
@@ -19,11 +19,8 @@ pub mod mapper;
 pub mod mem;
 pub mod ppu;
 pub mod rom;
-pub mod ai;
 
-// C library support
-pub mod speex;
-
+use ai::Ai;
 use cpu::Cpu;
 use gfx::{Gfx, Scale};
 use input::{Input, InputResult};
@@ -38,40 +35,24 @@ use std::fs::File;
 use std::path::Path;
 use std::rc::Rc;
 
-fn record_fps(last_time: &mut f64, frames: &mut usize) {
-    if cfg!(debug) {
-        let now = time::precise_time_s();
-        if now >= *last_time + 1f64 {
-            println!("{} FPS", *frames);
-            *frames = 0;
-            *last_time = now;
-        } else {
-            *frames += 1;
-        }
-    }
-}
-
 /// Starts the emulator main loop with a ROM and window scaling. Returns when the user presses ESC.
 pub fn start_emulator(rom: Rom, scale: Scale) {
+    let ai = Rc::new(RefCell::new(Ai::new()));
+
     let rom = Box::new(rom);
-    // println!("Loaded ROM: {}", rom.header);
 
     let (mut gfx, sdl) = Gfx::new(scale);
 
     let mapper: Box<dyn Mapper + Send> = mapper::create_mapper(rom);
     let mapper = Rc::new(RefCell::new(mapper));
     let ppu = Ppu::new(Vram::new(mapper.clone()), Oam::new());
-    let input = Input::new(sdl);
+    let input = Input::new(sdl, ai.clone());
     let memmap = MemMap::new(ppu, input, mapper);
     let mut cpu = Cpu::new(memmap);
 
-    // TODO: Add a flag to not reset for nestest.log
     cpu.reset();
 
     cpu.load(&mut File::open(&Path::new("state.sav")).unwrap());
-
-    let mut last_time = time::precise_time_s();
-    let mut frames = 0;
 
     loop {
         cpu.step();
@@ -86,20 +67,23 @@ pub fn start_emulator(rom: Rom, scale: Scale) {
         if ppu_result.new_frame {
             gfx.tick();
             gfx.composite(&mut *cpu.mem.ppu.screen);
-            record_fps(&mut last_time, &mut frames);
 
-            match cpu.mem.input.check_input() {
-                // InputResult::Continue => {}
-                InputResult::Quit => break,
-                _ => {}
-                /*InputResult::SaveState => {
-                    cpu.save(&mut File::create(&Path::new("state.sav")).unwrap());
-                    gfx.status_line.set("Saved state".to_string());
-                }
-                InputResult::LoadState => {
+            {
+                let mut ai = ai.borrow_mut();
+
+                if ai.is_stuck() || ai.is_dead() {
                     cpu.load(&mut File::open(&Path::new("state.sav")).unwrap());
-                    gfx.status_line.set("Loaded state".to_string());
-                }*/
+                    gfx.status_line.set("AI was stuck/died so reset".to_string());
+                    ai.reset();
+                    continue;
+                }
+
+                ai.update_game_state(&mut cpu);
+                ai.debug_game_state();
+            }
+
+            if cpu.mem.input.check_input() == InputResult::Quit {
+                break;
             }
         }
     }

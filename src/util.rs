@@ -126,37 +126,3 @@ macro_rules! save_enum(
         }
     )
 );
-
-//
-// Random number generation
-//
-
-// TODO remove this and emulate the APU's noise generator properly
-
-#[derive(Copy, Clone)]
-pub struct Xorshift {
-    pub x: u32,
-    pub y: u32,
-    pub z: u32,
-    pub w: u32,
-}
-
-impl Xorshift {
-    pub fn new() -> Xorshift {
-        Xorshift {
-            x: 123456789,
-            y: 362436069,
-            z: 521288629,
-            w: 88675123,
-        }
-    }
-
-    pub fn next(&mut self) -> u32 {
-        let t = self.x ^ (self.x << 11);
-        self.x = self.y;
-        self.y = self.z;
-        self.z = self.w;
-        self.w = self.w ^ (self.w >> 19) ^ (t ^ (t >> 8));
-        self.w
-    }
-}

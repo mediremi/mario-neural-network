@@ -2,13 +2,16 @@
 // Author: Patrick Walton
 //
 
+use ai::Ai;
 use mem::Mem;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::Sdl;
 
+use std::cell::RefCell;
 use std::ops::Deref;
+use std::rc::Rc;
 
 //
 // The "strobe state": the order in which the NES reads the buttons.
@@ -84,8 +87,10 @@ pub struct GamePadState {
 pub struct Input {
     pub gamepad_0: GamePadState,
     sdl: Sdl, // FIXME: Use a `&'a mut EventPump` instead
+    ai: Rc<RefCell<Ai>>,
 }
 
+#[derive(PartialEq, Eq)]
 pub enum InputResult {
     Continue,  // Keep playing.
     Quit,      // Quit the emulator.
@@ -94,7 +99,7 @@ pub enum InputResult {
 }
 
 impl Input {
-    pub fn new(sdl: Sdl) -> Input {
+    pub fn new(sdl: Sdl, ai: Rc<RefCell<Ai>>) -> Input {
         Input {
             gamepad_0: GamePadState {
                 left: false,
@@ -111,6 +116,7 @@ impl Input {
                 },
             },
             sdl: sdl,
+            ai: ai,
         }
     }
 
@@ -128,8 +134,15 @@ impl Input {
         }
     }
 
+    fn get_event(&mut self) -> Option<sdl2::event::Event> {
+        match self.sdl.event_pump().unwrap().poll_event() {
+            None => self.ai.borrow().get_input(),
+            some => some,
+        }
+    }
+
     pub fn check_input(&mut self) -> InputResult {
-        while let Some(ev) = self.sdl.event_pump().unwrap().poll_event() {
+        while let Some(ev) = self.get_event() {
             match ev {
                 Event::KeyDown {
                     keycode: Some(Keycode::Escape),

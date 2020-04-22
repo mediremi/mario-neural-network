@@ -1229,6 +1229,11 @@ impl<M: Mem> Cpu<M> {
         self.regs.pc = self.loadw(BRK_VECTOR);
     }
 
+    // Allows AI to read memory
+    pub fn loadb(&mut self, addr: u16) -> u8 {
+        return self.mem.loadb(addr)
+    }
+
     pub fn new(mem: M) -> Cpu<M> {
         Cpu {
             cy: 0,

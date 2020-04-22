@@ -8,7 +8,5 @@ authors = [ "pcwalton@mimiga.net" ]
 name = "nes"
 
 [dependencies]
-sdl2 = "0.32.1"
-time = "*"
-libc = "*"
-lazy_static = "*"
+sdl2 = { version = "0.32.1", features = ["bundled"] }
+libc = "0.2.*"

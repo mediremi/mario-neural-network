@@ -404,6 +404,7 @@ impl Gfx {
         let renderer = window
             .into_canvas()
             .accelerated()
+            // XXX: Delete line below for no rate limiting
             .present_vsync()
             .build()
             .unwrap();
