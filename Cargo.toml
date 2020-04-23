@@ -1,11 +1,10 @@
 [package]
-
-name = "sprocketnes"
+name = "mario-neural-network"
 version = "0.1.0"
-authors = [ "pcwalton@mimiga.net" ]
+authors = [ "mediremi" ]
 
 [lib]
-name = "nes"
+name = "mario_neural_network"
 
 [dependencies]
 sdl2 = { version = "0.32.1", features = ["bundled"] }

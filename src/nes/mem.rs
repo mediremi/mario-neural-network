@@ -2,10 +2,10 @@
 // Author: Patrick Walton
 //
 
-use input::Input;
-use mapper::Mapper;
-use ppu::Ppu;
-use util::Save;
+use super::input::Input;
+use super::mapper::Mapper;
+use super::ppu::Ppu;
+use super::util::Save;
 
 use std::cell::RefCell;
 use std::fs::File;

@@ -5,7 +5,7 @@
 // Author: Patrick Walton
 //
 
-use rom::Rom;
+use super::rom::Rom;
 
 use std::ops::Deref;
 

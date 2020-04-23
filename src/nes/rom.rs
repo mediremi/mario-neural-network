@@ -4,7 +4,7 @@
 // Author: Patrick Walton
 //
 
-use util;
+use super::util;
 
 use std::fmt;
 use std::io::{self, Read};

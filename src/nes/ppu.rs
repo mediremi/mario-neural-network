@@ -2,9 +2,9 @@
 // Author: Patrick Walton
 //
 
-use mapper::{Mapper, MapperResult};
-use mem::Mem;
-use util::Save;
+use super::mapper::{Mapper, MapperResult};
+use super::mem::Mem;
+use super::util::Save;
 
 use std::cell::RefCell;
 use std::fs::File;

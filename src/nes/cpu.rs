@@ -2,14 +2,14 @@
 // Author: Patrick Walton
 //
 
-use mem::Mem;
-use util::Save;
+use super::mem::Mem;
+use super::util::Save;
 
 use std::fs::File;
 use std::ops::Deref;
 
 #[cfg(cpuspew)]
-use disasm::Disassembler;
+use super::disasm::Disassembler;
 use std::num::Wrapping;
 
 const CARRY_FLAG: u8 = 1 << 0;

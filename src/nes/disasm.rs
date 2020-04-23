@@ -2,7 +2,7 @@
 // Author: Patrick Walton
 //
 
-use mem::Mem;
+use super::mem::Mem;
 
 pub struct Disassembler<'a, M: Mem + 'a> {
     pub pc: u16,

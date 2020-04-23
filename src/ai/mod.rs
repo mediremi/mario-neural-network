@@ -1,70 +1,7 @@
-pub mod game_state;
+mod iteration;
 
-use self::game_state::GameState;
-use super::{cpu, mem};
-
-use std::time::{Duration, Instant};
-
-#[derive(Eq, PartialEq)]
-enum IterationState {
-    Playing,
-    Stuck,
-    Dead,
-    Succeeded,
-}
-
-struct Iteration {
-    game_state: GameState,
-    previous_game_state: GameState,
-    state: IterationState,
-    start: Instant,
-}
-
-impl Iteration {
-    fn new() -> Iteration {
-        Iteration {
-            game_state: GameState {
-                ..Default::default()
-            },
-            previous_game_state: GameState {
-                ..Default::default()
-            },
-            state: IterationState::Playing,
-            start: Instant::now(),
-        }
-    }
-
-    fn update_game_state(&mut self, mut cpu: &mut cpu::Cpu<mem::MemMap>) {
-        self.previous_game_state = self.game_state;
-        self.game_state = game_state::get_state(&mut cpu);
-
-        if self.game_state.lives < self.previous_game_state.lives {
-            self.state = IterationState::Dead;
-        } else if self.game_state.level > self.previous_game_state.level {
-            self.state = IterationState::Succeeded;
-        }
-    }
-
-    fn debug_game_state(&self) {
-        if self.game_state != self.previous_game_state {
-            println!("{:?}", self.game_state);
-        }
-    }
-
-    // TODO: If AI does not move for X seconds then consider to be stuck
-    fn is_stuck(&self) -> bool {
-        self.state == IterationState::Stuck
-    }
-
-    fn is_dead(&self) -> bool {
-        self.state == IterationState::Dead
-    }
-}
-
-// TODO
-enum InputEvent {
-    Reset,
-}
+use self::iteration::{Iteration, Inputs};
+use crate::nes::{cpu, mem};
 
 pub struct Ai {
     current_iteration: Iteration,
@@ -98,8 +35,11 @@ impl Ai {
         self.current_iteration.is_dead()
     }
 
-    // TODO: If stuck, output 'load state' event
-    pub fn get_input(&self) -> Option<sdl2::event::Event> {
-        None
+    pub fn get_inputs(&self) -> Inputs {
+        self.current_iteration.get_inputs()
+    }
+
+    pub fn has_succeeded(&self) -> bool {
+        unimplemented!()
     }
 }

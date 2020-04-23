@@ -1,3 +1,3 @@
 run:
 	@cargo build --release --quiet
-	@./target/release/nes -3 super_mario.nes
+	@./target/release/mario_neural_network

@@ -50,7 +50,7 @@ impl Save for u8 {
 
 impl Save for u16 {
     fn save(&mut self, fd: &mut File) {
-        fd.write(&[*self as u8, (*self >> 8) as u8]).unwrap();
+        fd.write_all(&[*self as u8, (*self >> 8) as u8]).unwrap();
     }
     fn load(&mut self, fd: &mut File) {
         let mut buf = [0, 0];
