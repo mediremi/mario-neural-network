@@ -1,16 +1,27 @@
 mod iteration;
 
-use self::iteration::{Iteration, Inputs};
+use self::iteration::{Inputs, Iteration, IterationOptions};
 use crate::nes::{cpu, mem};
 
+pub struct AiOptions {
+    pub stuck_timeout_s: u64,
+    pub finish_timeout_s: u64,
+}
+
 pub struct Ai {
+    iteration_options: IterationOptions,
     current_iteration: Iteration,
 }
 
 impl Ai {
-    pub fn new() -> Ai {
+    pub fn new(options: AiOptions) -> Ai {
+        let iteration_options = IterationOptions {
+            stuck_timeout_s: options.stuck_timeout_s,
+            finish_timeout_s: options.finish_timeout_s,
+        };
         Ai {
-            current_iteration: Iteration::new(),
+            iteration_options,
+            current_iteration: Iteration::new(iteration_options),
         }
     }
 
@@ -24,7 +35,8 @@ impl Ai {
 
     // TODO: Do stuff with new iteration parameters
     pub fn reset(&mut self) {
-        self.current_iteration = Iteration::new();
+        // TODO: Store `self.current_iteration.fitness()`
+        self.current_iteration = Iteration::new(self.iteration_options);
     }
 
     pub fn is_stuck(&self) -> bool {
@@ -35,11 +47,11 @@ impl Ai {
         self.current_iteration.is_dead()
     }
 
-    pub fn get_inputs(&self) -> Inputs {
-        self.current_iteration.get_inputs()
+    pub fn has_succeeded(&self) -> bool {
+        self.current_iteration.has_succeeded()
     }
 
-    pub fn has_succeeded(&self) -> bool {
-        unimplemented!()
+    pub fn get_inputs(&self) -> Inputs {
+        self.current_iteration.get_inputs()
     }
 }

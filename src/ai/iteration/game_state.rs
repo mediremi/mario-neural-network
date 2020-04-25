@@ -20,7 +20,7 @@ impl fmt::Debug for GameState {
     }
 }
 
-// Source: https://datacrystal.romhacking.net/wiki/Super_Mario_Bros.:RAM_map
+// Source for memory addresses: https://datacrystal.romhacking.net/wiki/Super_Mario_Bros.:RAM_map
 pub fn get_state(cpu: &mut cpu::Cpu<mem::MemMap>) -> GameState {
     let mario_x = {
         let mario_level_x = cpu.loadb(0x6D) as u16;

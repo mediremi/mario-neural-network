@@ -387,8 +387,15 @@ pub struct Gfx {
     _texture_creator: TextureCreator<WindowContext>,
 }
 
+pub struct GfxOptions {
+    pub scale: Scale,
+    pub vsync: bool
+}
+
 impl Gfx {
-    pub fn new(scale: Scale) -> (Gfx, Sdl) {
+    pub fn new(options: GfxOptions) -> (Gfx, Sdl) {
+        let scale = options.scale;
+
         // FIXME: Handle SDL better
 
         let sdl = sdl2::init().unwrap();
@@ -401,13 +408,14 @@ impl Gfx {
         );
         let window = window_builder.position_centered().build().unwrap();
 
-        let renderer = window
-            .into_canvas()
-            .accelerated()
-            // XXX: Delete line below for no rate limiting
-            .present_vsync()
-            .build()
-            .unwrap();
+        let renderer = window.into_canvas().accelerated();
+        let renderer = if options.vsync {
+            renderer.present_vsync()
+        } else {
+            renderer
+        };
+        let renderer = renderer.build().unwrap();
+
         let texture_creator = renderer.texture_creator();
         let texture_creator_pointer = &texture_creator as *const TextureCreator<WindowContext>;
         let texture = unsafe { &*texture_creator_pointer }

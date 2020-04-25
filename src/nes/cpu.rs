@@ -1231,7 +1231,7 @@ impl<M: Mem> Cpu<M> {
 
     // Allows AI to read memory
     pub fn loadb(&mut self, addr: u16) -> u8 {
-        return self.mem.loadb(addr)
+        return self.mem.loadb(addr);
     }
 
     pub fn new(mem: M) -> Cpu<M> {

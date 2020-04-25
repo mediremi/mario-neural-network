@@ -8,11 +8,11 @@ extern crate sdl2;
 pub mod ai;
 pub mod nes;
 
-use ai::Ai;
+use ai::{Ai, AiOptions};
 use nes::cpu::Cpu;
-use nes::gfx::{Gfx, Scale};
-use nes::input::{Input, GamepadState};
-use nes::mapper::{Mapper, create_mapper};
+use nes::gfx::{Gfx, GfxOptions, Scale};
+use nes::input::Input;
+use nes::mapper::{create_mapper, Mapper};
 use nes::mem::MemMap;
 use nes::ppu::{Oam, Ppu, Vram};
 use nes::rom::Rom;
@@ -26,13 +26,17 @@ use std::rc::Rc;
 pub struct EmulatorOptions {
     pub rom: Rom,
     pub scale: Scale,
-    pub save_state_path: &'static str
+    pub save_state_path: &'static str,
+    pub vsync: bool,
 }
 
-pub fn start(emulator_options: EmulatorOptions) {
+pub fn start(emulator_options: EmulatorOptions, ai_options: AiOptions) {
     let rom = Box::new(emulator_options.rom);
 
-    let (mut gfx, sdl) = Gfx::new(emulator_options.scale);
+    let (mut gfx, sdl) = Gfx::new(GfxOptions {
+        scale: emulator_options.scale,
+        vsync: emulator_options.vsync,
+    });
 
     let mapper: Box<dyn Mapper + Send> = create_mapper(rom);
     let mapper = Rc::new(RefCell::new(mapper));
@@ -45,7 +49,7 @@ pub fn start(emulator_options: EmulatorOptions) {
 
     cpu.load(&mut File::open(&Path::new(emulator_options.save_state_path)).unwrap());
 
-    let mut ai = Ai::new();
+    let mut ai = Ai::new(ai_options);
 
     loop {
         cpu.step();
@@ -63,13 +67,20 @@ pub fn start(emulator_options: EmulatorOptions) {
 
             if ai.is_stuck() || ai.is_dead() {
                 cpu.load(&mut File::open(&Path::new(emulator_options.save_state_path)).unwrap());
-                gfx.status_line.set("AI was stuck/died so reset".to_string());
+                let reason = if ai.is_stuck() {
+                    "was stuck"
+                } else {
+                    "died"
+                };
+                gfx.status_line
+                    .set(format!("AI {} so reset", reason).to_string());
                 ai.reset();
                 continue;
             }
 
             if ai.has_succeeded() {
                 println!("AI succeeded");
+                // TODO: Save successful neural network
                 break;
             }
 
@@ -77,13 +88,8 @@ pub fn start(emulator_options: EmulatorOptions) {
             ai.debug_game_state();
 
             let ai_inputs = ai.get_inputs();
-            cpu.mem.input.gamepad = GamepadState {
-                left: ai_inputs.left,
-                right: ai_inputs.right,
-                a: ai_inputs.a,
-                b: ai_inputs.b,
-                ..cpu.mem.input.gamepad
-            };
+            cpu.mem.input.gamepad.right = ai_inputs.right;
+            cpu.mem.input.gamepad.a = ai_inputs.a;
 
             if cpu.mem.input.shutdown_requested() {
                 break;
