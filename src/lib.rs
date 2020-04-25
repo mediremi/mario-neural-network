@@ -2,13 +2,19 @@
 // Author: Patrick Walton
 //
 
+extern crate crossbeam;
 extern crate libc;
 extern crate sdl2;
+extern crate simple_server;
+extern crate tungstenite;
 
 pub mod ai;
+pub mod dashboard;
 pub mod nes;
+mod utils;
 
 use ai::{Ai, AiOptions};
+use dashboard::{Dashboard, DashboardOptions};
 use nes::cpu::Cpu;
 use nes::gfx::{Gfx, GfxOptions, Scale};
 use nes::input::Input;
@@ -30,12 +36,12 @@ pub struct EmulatorOptions {
     pub vsync: bool,
 }
 
-pub fn start(emulator_options: EmulatorOptions, ai_options: AiOptions) {
-    let rom = Box::new(emulator_options.rom);
+fn init_emulator(options: EmulatorOptions) -> (Cpu<MemMap>, Gfx) {
+    let rom = Box::new(options.rom);
 
-    let (mut gfx, sdl) = Gfx::new(GfxOptions {
-        scale: emulator_options.scale,
-        vsync: emulator_options.vsync,
+    let (gfx, sdl) = Gfx::new(GfxOptions {
+        scale: options.scale,
+        vsync: options.vsync,
     });
 
     let mapper: Box<dyn Mapper + Send> = create_mapper(rom);
@@ -47,9 +53,20 @@ pub fn start(emulator_options: EmulatorOptions, ai_options: AiOptions) {
 
     cpu.reset();
 
-    cpu.load(&mut File::open(&Path::new(emulator_options.save_state_path)).unwrap());
+    cpu.load(&mut File::open(&Path::new(options.save_state_path)).unwrap());
 
+    (cpu, gfx)
+}
+
+pub fn start(
+    emulator_options: EmulatorOptions,
+    ai_options: AiOptions,
+    dashboard_options: DashboardOptions,
+) {
+    let save_state_path = emulator_options.save_state_path;
+    let (mut cpu, mut gfx) = init_emulator(emulator_options);
     let mut ai = Ai::new(ai_options);
+    let dashboard = Dashboard::new(dashboard_options);
 
     loop {
         cpu.step();
@@ -66,12 +83,8 @@ pub fn start(emulator_options: EmulatorOptions, ai_options: AiOptions) {
             gfx.composite(&mut *cpu.mem.ppu.screen);
 
             if ai.is_stuck() || ai.is_dead() {
-                cpu.load(&mut File::open(&Path::new(emulator_options.save_state_path)).unwrap());
-                let reason = if ai.is_stuck() {
-                    "was stuck"
-                } else {
-                    "died"
-                };
+                cpu.load(&mut File::open(&Path::new(save_state_path)).unwrap());
+                let reason = if ai.is_stuck() { "was stuck" } else { "died" };
                 gfx.status_line
                     .set(format!("AI {} so reset", reason).to_string());
                 ai.reset();
@@ -85,11 +98,14 @@ pub fn start(emulator_options: EmulatorOptions, ai_options: AiOptions) {
             }
 
             ai.update_game_state(&mut cpu);
-            ai.debug_game_state();
+            // ai.debug_game_state();
 
             let ai_inputs = ai.get_inputs();
             cpu.mem.input.gamepad.right = ai_inputs.right;
             cpu.mem.input.gamepad.a = ai_inputs.a;
+
+            // TODO: Only call this every 30 ms
+            dashboard.update_screen(ai.get_screen());
 
             if cpu.mem.input.shutdown_requested() {
                 break;

@@ -101,7 +101,7 @@ impl Iteration {
 
     // TODO
     fn run_neural_network(&self) -> (f64, f64) {
-        (1.0, 0.0)
+        (0.0, 0.0)
     }
 
     pub fn get_inputs(&self) -> Inputs {

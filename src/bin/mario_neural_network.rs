@@ -1,8 +1,9 @@
 extern crate mario_neural_network;
 
-use mario_neural_network::{ai, nes, start, EmulatorOptions};
+use mario_neural_network::{ai, dashboard, nes, start, EmulatorOptions};
 
 use ai::AiOptions;
+use dashboard::DashboardOptions;
 use nes::gfx::Scale;
 use nes::rom::Rom;
 
@@ -16,8 +17,12 @@ const SAVE_STATE_PATH: &'static str = "state.sav";
 const VSYNC: bool = true;
 
 // AI options
-const STUCK_TIMEOUT_S: u64 = 2;
+const STUCK_TIMEOUT_S: u64 = 20;
 const FINISH_TIMEOUT_S: u64 = 20;
+
+// Dashboard options
+const HOST: &'static str = "localhost";
+const PORT: u64 = 8080;
 
 fn main() {
     let rom = Rom::load(&mut File::open(&Path::new(ROM_PATH)).unwrap()).unwrap();
@@ -32,5 +37,9 @@ fn main() {
             stuck_timeout_s: STUCK_TIMEOUT_S,
             finish_timeout_s: FINISH_TIMEOUT_S,
         },
+        DashboardOptions {
+            host: HOST,
+            port: PORT
+        }
     );
 }

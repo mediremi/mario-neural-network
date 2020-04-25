@@ -2,6 +2,7 @@ mod iteration;
 
 use self::iteration::{Inputs, Iteration, IterationOptions};
 use crate::nes::{cpu, mem};
+use crate::utils::{Tile, Screen};
 
 pub struct AiOptions {
     pub stuck_timeout_s: u64,
@@ -53,5 +54,10 @@ impl Ai {
 
     pub fn get_inputs(&self) -> Inputs {
         self.current_iteration.get_inputs()
+    }
+
+    // TODO
+    pub fn get_screen(&self) -> Screen {
+        [[Tile::Nothing; 32]; 30]
     }
 }

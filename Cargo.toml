@@ -9,3 +9,6 @@ name = "mario_neural_network"
 [dependencies]
 sdl2 = { version = "0.32.1", features = ["bundled"] }
 libc = "0.2.*"
+crossbeam = "0.7"
+simple-server = { git = "https://github.com/steveklabnik/simple-server" }
+tungstenite = "0.10.1"
