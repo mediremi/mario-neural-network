@@ -1,4 +1,5 @@
-use super::super::{cpu, mem};
+use crate::nes::{cpu, mem};
+use crate::utils::{Screen, Tile};
 
 use std::fmt;
 
@@ -41,4 +42,60 @@ pub fn get_state(cpu: &mut cpu::Cpu<mem::MemMap>) -> GameState {
         lives,
         level,
     }
+}
+
+pub fn get_screen(cpu: &mut cpu::Cpu<mem::MemMap>, game_state: GameState) -> Screen {
+    fn get_tile(x: i32, y: i32, cpu: &mut cpu::Cpu<mem::MemMap>) -> Tile {
+        let sub_y = (y - 32) / 16;
+        if sub_y >= 13 || sub_y < 0 {
+            return Tile::Nothing;
+        }
+        let sub_x = (x % 256) / 16;
+        let page = (x / 256) % 2;
+        let addr = 0x500 + (page * 13 * 16) + (sub_y * 16) + sub_x;
+        if cpu.loadb(addr as u16) == 0 {
+            Tile::Nothing
+        } else {
+            Tile::Block
+        }
+    }
+
+    fn get_enemies(cpu: &mut cpu::Cpu<mem::MemMap>) -> Vec<(u16, u16)> {
+        let mut enemies = vec![];
+        for slot in 0..=4 {
+            let enemy = cpu.loadb(0xF + slot);
+            if enemy != 0 {
+                let e_x = (cpu.loadb(0x6E + slot) as u16 * 0x100) + cpu.loadb(0x87 + slot) as u16;
+                let e_y = cpu.loadb(0xCF + slot) as u16 + 24;
+                enemies.push((e_x, e_y));
+            }
+        }
+        enemies
+    }
+
+    // How many blocks NN sees to left, right, top and bottom of Mario
+    const VIEW_SIZE: i32 = 6;
+    const BLOCK_SIZE: i32 = 16;
+    let mut screen = [[Tile::Nothing; 13]; 13];
+    for i in -VIEW_SIZE..=VIEW_SIZE {
+        let dy = i * BLOCK_SIZE;
+        let y = game_state.mario_y as i32 + dy - BLOCK_SIZE;
+
+        for j in -VIEW_SIZE..=VIEW_SIZE {
+            let dx = j * BLOCK_SIZE;
+            let x = game_state.mario_x as i32 + dx + 8;
+            screen[(i + VIEW_SIZE) as usize][(j + VIEW_SIZE) as usize] = get_tile(x, y, cpu)
+        }
+    }
+    screen[VIEW_SIZE as usize + 1][VIEW_SIZE as usize] = Tile::Mario;
+
+    for (e_x, e_y) in get_enemies(cpu) {
+        let i = (e_y as i32 - game_state.mario_y as i32) / BLOCK_SIZE + VIEW_SIZE;
+        let j = (e_x as i32 - game_state.mario_x as i32) / BLOCK_SIZE + VIEW_SIZE;
+        if (0 <= i && i < 13) && (0 <= j && j < 13) {
+            screen[i as usize][j as usize] = Tile::Enemy;
+        }
+    }
+
+    screen
 }

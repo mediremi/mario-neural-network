@@ -16,7 +16,7 @@ const tileColours = [
     "red"
 ]
 
-const updateScreen = (screen) => {
+const renderScreen = (screen) => {
 	screen.forEach((row, rowIndex) => {
 		row.forEach((tile, tileIndex) => {
 			ctx.fillStyle = tileColours[tile]
@@ -25,10 +25,15 @@ const updateScreen = (screen) => {
 	})
 }
 
-ws.addEventListener("message", (event) => {
-	const { event, data } = JSON.parse(event.data)
+let renderScreenTimeout = null
+
+ws.addEventListener("message", (e) => {
+	const { event, data } = JSON.parse(e.data)
 	switch (event) {
 	case "update_screen":
-		updateScreen(data)
+        if (renderScreenTimeout) {
+            cancelAnimationFrame(renderScreenTimeout)
+        }
+        renderScreenTimeout = requestAnimationFrame(() => renderScreen(data))
     }
 })

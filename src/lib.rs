@@ -28,6 +28,7 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::path::Path;
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 pub struct EmulatorOptions {
     pub rom: Rom,
@@ -68,6 +69,9 @@ pub fn start(
     let mut ai = Ai::new(ai_options);
     let dashboard = Dashboard::new(dashboard_options);
 
+    let mut last_dashboard_update = Instant::now();
+    let dashboard_update_interval = Duration::from_millis(30);
+
     loop {
         cpu.step();
 
@@ -104,8 +108,10 @@ pub fn start(
             cpu.mem.input.gamepad.right = ai_inputs.right;
             cpu.mem.input.gamepad.a = ai_inputs.a;
 
-            // TODO: Only call this every 30 ms
-            dashboard.update_screen(ai.get_screen());
+            if last_dashboard_update.elapsed() > dashboard_update_interval {
+                dashboard.update_screen(ai.get_screen());
+                last_dashboard_update = Instant::now();
+            }
 
             if cpu.mem.input.shutdown_requested() {
                 break;

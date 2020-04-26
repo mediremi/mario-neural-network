@@ -1,6 +1,6 @@
 use crate::utils::{Tile, Screen};
 
-use crossbeam::channel::{bounded, Receiver, Sender};
+use crossbeam::channel::{unbounded, Receiver, Sender};
 use simple_server::{Method, Server, StatusCode};
 use tungstenite::server::accept;
 
@@ -50,8 +50,7 @@ pub struct Dashboard {
 
 impl Dashboard {
     pub fn new(options: DashboardOptions) -> Dashboard {
-        // Zero-capacity bounded channel so that emulator waits for user to load dashboard
-        let (tx, rx) = bounded(0);
+        let (tx, rx) = unbounded();
         spawn(move || Dashboard::run_http_server(options.host, options.port));
         spawn(move || Dashboard::run_websockets_server(options.host, rx));
         Dashboard { sender: tx }

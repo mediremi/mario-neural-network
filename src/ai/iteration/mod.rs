@@ -3,6 +3,7 @@ mod neural_network;
 
 use self::game_state::GameState;
 use crate::nes::{cpu, mem};
+use crate::utils::Screen;
 
 use std::time::Instant;
 
@@ -29,6 +30,7 @@ pub struct IterationOptions {
 pub struct Iteration {
     game_state: GameState,
     previous_game_state: GameState,
+    screen: Screen,
     state: IterationState,
     start: Instant,
     last_x: u16,
@@ -43,6 +45,7 @@ impl Iteration {
         Iteration {
             game_state: GameState::default(),
             previous_game_state: GameState::default(),
+            screen: Screen::default(),
             state: IterationState::Playing,
             start: Instant::now(),
             last_x: 0,
@@ -77,6 +80,7 @@ impl Iteration {
     pub fn update_game_state(&mut self, mut cpu: &mut cpu::Cpu<mem::MemMap>) {
         self.previous_game_state = self.game_state;
         self.game_state = game_state::get_state(&mut cpu);
+        self.screen = game_state::get_screen(&mut cpu, self.game_state);
 
         self.update_state();
     }
@@ -101,7 +105,7 @@ impl Iteration {
 
     // TODO
     fn run_neural_network(&self) -> (f64, f64) {
-        (0.0, 0.0)
+        (1.0, 0.0)
     }
 
     pub fn get_inputs(&self) -> Inputs {
@@ -111,6 +115,10 @@ impl Iteration {
             right: right_value > THRESHOLD,
             a: a_value > THRESHOLD,
         }
+    }
+
+    pub fn get_screen(&self) -> Screen {
+        self.screen
     }
 
     pub fn fitness(&self) -> u64 {

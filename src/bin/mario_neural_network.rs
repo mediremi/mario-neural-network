@@ -17,7 +17,7 @@ const SAVE_STATE_PATH: &'static str = "state.sav";
 const VSYNC: bool = true;
 
 // AI options
-const STUCK_TIMEOUT_S: u64 = 20;
+const STUCK_TIMEOUT_S: u64 = 2;
 const FINISH_TIMEOUT_S: u64 = 20;
 
 // Dashboard options
