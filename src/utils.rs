@@ -6,24 +6,16 @@ pub enum Tile {
     Mario = 3,
 }
 
-impl Tile {
-    fn as_nn_input(&self) -> f64 {
-        use self::Tile::*;
-
-        match self {
-            Nothing | Mario => 0.0,
-            Block => 1.0,
-            Enemy => -1.0
-        }
-    }
-}
-
 impl Default for Tile {
     fn default() -> Self {
         Tile::Nothing
     }
 }
 
+// How many blocks NN sees to left, right, top and bottom of Mario
+pub const VIEW_SIZE: i32 = 6;
+
+pub const SCREEN_SIZE: usize = (VIEW_SIZE as usize * 2) + 1;
 // Each block in SMB is a 'megatile'. Each megatile consists of four 8x8 tiles.
 // The NN sees the screen as a 13x13 square of megatiles.
-pub type Screen = [[Tile; 13]; 13];
+pub type Screen = [[Tile; SCREEN_SIZE]; SCREEN_SIZE];

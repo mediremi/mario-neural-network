@@ -378,6 +378,7 @@ version = "0.1.0"
 dependencies = [
  "crossbeam 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.69 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "sdl2 0.32.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "simple-server 0.4.0 (git+https://github.com/steveklabnik/simple-server)",
  "tungstenite 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",

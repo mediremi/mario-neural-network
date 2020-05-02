@@ -12,3 +12,4 @@ libc = "0.2.*"
 crossbeam = "0.7"
 simple-server = { git = "https://github.com/steveklabnik/simple-server" }
 tungstenite = "0.10.1"
+rand = "0.7.3"

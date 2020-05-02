@@ -7,6 +7,7 @@ extern crate libc;
 extern crate sdl2;
 extern crate simple_server;
 extern crate tungstenite;
+extern crate rand;
 
 pub mod ai;
 pub mod dashboard;
@@ -86,19 +87,17 @@ pub fn start(
             gfx.tick();
             gfx.composite(&mut *cpu.mem.ppu.screen);
 
-            if ai.is_stuck() || ai.is_dead() {
-                cpu.load(&mut File::open(&Path::new(save_state_path)).unwrap());
-                let reason = if ai.is_stuck() { "was stuck" } else { "died" };
-                gfx.status_line
-                    .set(format!("AI {} so reset", reason).to_string());
-                ai.reset();
-                continue;
-            }
-
             if ai.has_succeeded() {
                 println!("AI succeeded");
                 // TODO: Save successful neural network
                 break;
+            } else if ai.is_stuck() || ai.is_dead() {
+                cpu.load(&mut File::open(&Path::new(save_state_path)).unwrap());
+                let reason = if ai.is_stuck() { "was stuck" } else { "died" };
+                gfx.status_line
+                    .set(format!("Reset because AI {}", reason).to_string());
+                ai.next_individual();
+                continue;
             }
 
             ai.update_game_state(&mut cpu);

@@ -57,11 +57,11 @@ impl Dashboard {
     }
 
     fn run_http_server(host: &'static str, port: u64) {
-        let server =
+        let mut server =
             Server::new(
                 |request, mut response| match (request.method(), request.uri().path()) {
                     (&Method::GET, "/") => {
-                        let path = Path::new("public/index.html");
+                        let path = Path::new("dashboard/index.html");
                         let mut file = match File::open(&path) {
                             Err(err) => panic!("couldn't open index.html: {}", err),
                             Ok(file) => file,
@@ -72,10 +72,11 @@ impl Dashboard {
                     }
                     (_, _) => {
                         response.status(StatusCode::NOT_FOUND);
-                        Ok(response.body("Error 404 - Not found".as_bytes().to_vec())?)
+                        Ok(response.body(b"Error 404 - Not found".to_vec())?)
                     }
                 },
             );
+        server.set_static_directory("dashboard/");
         println!("Dashboard listening on http://{}:{}", host, port);
         let port = format!("{}", port);
         server.listen(host, &port);

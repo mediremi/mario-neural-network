@@ -1,5 +1,5 @@
 use crate::nes::{cpu, mem};
-use crate::utils::{Screen, Tile};
+use crate::utils::{Screen, Tile, VIEW_SIZE};
 
 use std::fmt;
 
@@ -73,10 +73,8 @@ pub fn get_screen(cpu: &mut cpu::Cpu<mem::MemMap>, game_state: GameState) -> Scr
         enemies
     }
 
-    // How many blocks NN sees to left, right, top and bottom of Mario
-    const VIEW_SIZE: i32 = 6;
     const BLOCK_SIZE: i32 = 16;
-    let mut screen = [[Tile::Nothing; 13]; 13];
+    let mut screen = Screen::default();
     for i in -VIEW_SIZE..=VIEW_SIZE {
         let dy = i * BLOCK_SIZE;
         let y = game_state.mario_y as i32 + dy - BLOCK_SIZE;
