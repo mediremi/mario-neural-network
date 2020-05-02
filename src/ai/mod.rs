@@ -5,6 +5,7 @@ use crate::nes::{cpu, mem};
 use crate::utils::{Screen, Tile, SCREEN_SIZE};
 
 use rand::distributions::{Distribution, Uniform};
+use rand::seq::SliceRandom;
 
 use std::cmp::Reverse;
 use std::time::Instant;
@@ -15,6 +16,9 @@ const MAX_SPECIES: usize = 30;
 // Maximum number of generations that a species can exist for without
 // improving its performance
 const MAX_SPECIES_STALENESS: u64 = 15;
+// Threshold below which a compatibility distance implies that two individuals
+// are of the same species
+const COMPATIBILITY_THRESHOLD: f64 = 3.0;
 
 impl Tile {
     fn as_nn_input(self) -> f64 {
@@ -218,7 +222,8 @@ impl Species {
     }
 
     fn sort(&mut self) {
-        self.members.sort_by_key(|individual| Reverse(individual.fitness));
+        self.members
+            .sort_by_key(|individual| Reverse(individual.fitness));
     }
 }
 
@@ -236,15 +241,18 @@ pub struct Ai {
 impl Ai {
     pub fn new(options: AiOptions) -> Self {
         Self {
-            pool: vec![Species {
-                id: 0,
-                members: vec![Individual::new(0)],
-                ..Species::default()
-            }, Species {
-                id: 1,
-                members: vec![Individual::new(3)],
-                ..Species::default()
-            }],
+            pool: vec![
+                Species {
+                    id: 0,
+                    members: vec![Individual::new(0)],
+                    ..Species::default()
+                },
+                Species {
+                    id: 1,
+                    members: vec![Individual::new(3)],
+                    ..Species::default()
+                },
+            ],
             generation: 0,
             max_fitness: 0,
             current_individual: (0, 0),
@@ -264,6 +272,18 @@ impl Ai {
             species_size as u64
         };
         fitness / species_size
+    }
+
+    fn cross_over(a: &Individual, b: &Individual) -> Individual {
+        unimplemented!()
+    }
+
+    fn compatibility_distance(a: &Individual, b: &Individual) -> f64 {
+        unimplemented!()
+    }
+
+    fn is_same_species(a: &Individual, b: &Individual) -> bool {
+        Self::compatibility_distance(a, b) < COMPATIBILITY_THRESHOLD
     }
 
     fn update_max_fitness(&mut self) {
@@ -308,30 +328,76 @@ impl Ai {
     }
 
     fn remove_weak_species(&mut self) {
-        self.pool.sort_by_key(|species| Reverse(species.members[0].fitness));
-        self.pool.truncate(MAX_SPECIES / 2);
+        if self.pool.len() > MAX_SPECIES {
+            self.pool
+                .sort_by_key(|species| Reverse(species.members[0].fitness));
+            self.pool.truncate(MAX_SPECIES / 2);
+        }
     }
 
     fn population(&self) -> i64 {
-        self.pool.iter().map(|species| species.size()).sum::<usize>() as i64
+        self.pool
+            .iter()
+            .map(|species| species.size())
+            .sum::<usize>() as i64
     }
 
     // Breed individuals of same species
-    fn cross_over_within_species(&self) {
-        unimplemented!()
+    fn cross_over_within_species(&mut self) {
+        let mut rng = rand::thread_rng();
+        for species in &mut self.pool {
+            if species.size() < 2 {
+                continue;
+            }
+            for _ in 0..species.size() {
+                let parents: Vec<&Individual> =
+                    species.members.choose_multiple(&mut rng, 2).collect();
+                let child = Self::cross_over(parents[0], parents[1]);
+                species.members.push(child);
+            }
+        }
+    }
+
+    fn add_to_pool(&mut self, individual: Individual) {
+        let mut species: Option<&mut Species> = None;
+        for s in &mut self.pool {
+            if Self::is_same_species(&individual, &s.members[0]) {
+                species = Some(s);
+                break;
+            }
+        }
+        match species {
+            Some(s) => s.members.push(individual),
+            None => {
+                let new_species = Species {
+                    id: self.pool.iter().map(|species| species.id).max().unwrap() + 1,
+                    members: vec![individual],
+                    ..Species::default()
+                };
+                self.pool.push(new_species);
+            }
+        }
     }
 
     // Breed individuals of different species
-    fn cross_over_between_species(&self) {
+    fn cross_over_between_species(&mut self) {
+        let mut rng = rand::thread_rng();
         let children_needed = DESIRED_POPULATION - self.population();
         for _ in 0..children_needed {
-            // TODO: breed random species
+            let species: Vec<&Species> = self.pool.choose_multiple(&mut rng, 2).collect();
+            let parent_a = species[0].members.choose(&mut rng).unwrap();
+            let parent_b = species[1].members.choose(&mut rng).unwrap();
+            let child = Self::cross_over(parent_a, parent_b);
+            self.add_to_pool(child);
         }
+    }
+
+    fn mutate(&self, individual: &mut Individual) {
         unimplemented!()
     }
 
-    // Mutate random individuals
-    fn mutate(&self) {
+    fn mutate_random_invididuals(&self) {
+        // TODO: Keep track of innovation numbers
         unimplemented!()
     }
 
@@ -340,12 +406,10 @@ impl Ai {
         self.sort_species();
         self.cull_species();
         self.remove_stale_species();
-        if self.pool.len() > MAX_SPECIES {
-            self.remove_weak_species();
-        }
+        self.remove_weak_species();
         self.cross_over_within_species();
         self.cross_over_between_species();
-        self.mutate();
+        self.mutate_random_invididuals();
         self.generation += 1;
     }
 
