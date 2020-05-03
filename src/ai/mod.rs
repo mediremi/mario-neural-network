@@ -192,14 +192,8 @@ struct Individual {
 
 impl Individual {
     pub fn new(max_innovation_number: u64) -> Self {
-        let mut nodes = vec![];
-        for _ in 0..INPUT_NODES {
-            nodes.push(Node(NodeType::Input));
-        }
-        for _ in 0..OUTPUT_NODES {
-            nodes.push(Node(NodeType::Output));
-        }
-
+        let mut nodes = vec![Node(NodeType::Input); INPUT_NODES];
+        nodes.append(&mut vec![Node(NodeType::Output); OUTPUT_NODES]);
         let mut rng = rand::thread_rng();
         let input_distribution = Uniform::from(0..INPUT_NODES);
         let output_distribution = Uniform::from(INPUT_NODES..(INPUT_NODES + OUTPUT_NODES));
@@ -249,6 +243,14 @@ impl Individual {
             entry.push((gene.in_node, gene.weight));
         }
         for i in (INPUT_NODES + OUTPUT_NODES)..self.nodes.len() {
+            if let Some(incoming) = incoming.get(&i) {
+                let sum = incoming
+                    .iter()
+                    .fold(0.0, |acc, (node, weight)| acc + (nodes[*node] * weight));
+                nodes[i] = Self::sigmoid(sum);
+            }
+        }
+        for i in INPUT_NODES..(INPUT_NODES + OUTPUT_NODES) {
             if let Some(incoming) = incoming.get(&i) {
                 let sum = incoming
                     .iter()
