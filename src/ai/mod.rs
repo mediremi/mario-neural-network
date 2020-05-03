@@ -334,7 +334,7 @@ impl Ai {
         let a_innos: HashSet<_> = a.genes.iter().map(|g| g.innovation_number).collect();
         let b_innos: HashSet<_> = b.genes.iter().map(|g| g.innovation_number).collect();
         let mut matching_genes: HashMap<_, _> = a_innos
-            .union(&b_innos)
+            .intersection(&b_innos)
             .cloned()
             .map(|i| (i, (None, None)))
             .collect();
@@ -463,7 +463,7 @@ impl Ai {
             .collect::<HashSet<_>>()
             .len() as f64;
         let mut weights: HashMap<_, _> = a_innos
-            .union(&b_innos)
+            .intersection(&b_innos)
             .cloned()
             .map(|i| (i, (0.0, 0.0)))
             .collect();
@@ -508,7 +508,7 @@ impl Ai {
     // Remove bottom half of each species
     fn cull_species(&mut self) {
         for species in &mut self.pool {
-            species.members.truncate(species.members.len() / 2);
+            species.members.truncate((species.members.len() / 2).max(1));
         }
     }
 
