@@ -102,17 +102,18 @@ impl IndividualState {
     fn update_state(&mut self) {
         use self::XState::*;
 
-        let not_moving = self.game_state.mario_x == self.last_x
-            && self.last_x_update.elapsed().as_secs() > self.stuck_timeout_s;
+        let is_moving = self.game_state.mario_x != self.last_x;
+        let is_stuck =
+            !is_moving && self.last_x_update.elapsed().as_secs() > self.stuck_timeout_s;
         let took_too_long = self.start.elapsed().as_secs() > self.finish_timeout_s;
 
         if self.game_state.lives < self.previous_game_state.lives {
             self.state = Dead;
         } else if self.game_state.level > self.previous_game_state.level {
             self.state = Succeeded;
-        } else if not_moving || took_too_long {
+        } else if is_stuck || took_too_long {
             self.state = Stuck;
-        } else {
+        } else if is_moving {
             self.last_x = self.game_state.mario_x;
             self.last_x_update = Instant::now();
         }
