@@ -94,8 +94,9 @@ pub fn start(
             } else if ai.is_stuck() || ai.is_dead() {
                 cpu.load(&mut File::open(&Path::new(save_state_path)).unwrap());
                 let reason = if ai.is_stuck() { "was stuck" } else { "died" };
-                gfx.status_line
-                    .set(format!("Reset because AI {}", reason).to_string());
+                let msg = format!("Reset because AI {}", reason).to_string();
+                println!("{}", msg);
+                gfx.status_line.set(msg);
                 ai.next_individual();
                 continue;
             }
