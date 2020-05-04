@@ -151,7 +151,7 @@ impl IndividualState {
 
     pub fn fitness(&self) -> u64 {
         let success_bonus = if self.has_succeeded() { 1000 } else { 0 };
-        (self.game_state.mario_x as u64 / self.start.elapsed().as_secs()) + success_bonus
+        (self.game_state.mario_x as u64 / (self.start.elapsed().as_secs() + 1)) + success_bonus
     }
 }
 
@@ -583,7 +583,7 @@ impl Ai {
     fn cross_over_between_species(&mut self) {
         let mut rng = rand::thread_rng();
         let children_needed = DESIRED_POPULATION - self.population();
-        for _ in 0..children_needed {
+        for _ in 0..rng.gen_range(0, children_needed) {
             let species: Vec<&Species> = self.pool.choose_multiple(&mut rng, 2).collect();
             let parent_a = species[0].members.choose(&mut rng).unwrap();
             let parent_b = species[1].members.choose(&mut rng).unwrap();
