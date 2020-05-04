@@ -14,10 +14,10 @@ use std::path::Path;
 const ROM_PATH: &'static str = "super_mario.nes";
 const SCALE: Scale = Scale::Scale3x;
 const SAVE_STATE_PATH: &'static str = "state.sav";
-const VSYNC: bool = true;
+const VSYNC: bool = false;
 
 // AI options
-const STUCK_TIMEOUT_S: u64 = 2;
+const STUCK_TIMEOUT_S: u64 = 1;
 const FINISH_TIMEOUT_S: u64 = 20;
 
 // Dashboard options
