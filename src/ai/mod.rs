@@ -7,6 +7,7 @@ use crate::utils::{Screen, Tile, SCREEN_SIZE};
 use rand::distributions::{Distribution, Uniform};
 use rand::seq::SliceRandom;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
@@ -103,8 +104,7 @@ impl IndividualState {
         use self::XState::*;
 
         let is_moving = self.game_state.mario_x != self.last_x;
-        let is_stuck =
-            !is_moving && self.last_x_update.elapsed().as_secs() > self.stuck_timeout_s;
+        let is_stuck = !is_moving && self.last_x_update.elapsed().as_secs() > self.stuck_timeout_s;
         let took_too_long = self.start.elapsed().as_secs() > self.finish_timeout_s;
 
         if self.game_state.lives < self.previous_game_state.lives {
@@ -155,14 +155,14 @@ impl IndividualState {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 enum NodeType {
     Input,
     Hidden,
     Output,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 struct Node(NodeType);
 
 impl Node {
@@ -175,7 +175,7 @@ impl Node {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 struct Gene {
     in_node: usize,
     out_node: usize,
@@ -184,7 +184,7 @@ struct Gene {
     innovation_number: u64,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 struct Individual {
     nodes: Vec<Node>,
     genes: Vec<Gene>,
@@ -263,7 +263,7 @@ impl Individual {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 struct Species {
     id: u64,
     members: Vec<Individual>,
@@ -280,6 +280,12 @@ impl Species {
         self.members
             .sort_by_key(|individual| Reverse(individual.fitness));
     }
+}
+
+#[derive(Serialize, Deserialize)]
+struct AiSnapshot {
+    pool: Vec<Species>,
+    generation: u64,
 }
 
 pub struct Ai {
@@ -489,6 +495,16 @@ impl Ai {
         Self::compatibility_distance(a, b) < COMPATIBILITY_THRESHOLD
     }
 
+    fn save_snapshot(&self) {
+        use std::fs::File;
+        let snapshot = AiSnapshot {
+            pool: self.pool.clone(),
+            generation: self.generation,
+        };
+        let filename = format!("snapshots/g-{}.json", self.generation);
+        serde_json::to_writer(&File::create(filename).unwrap(), &snapshot).unwrap();
+    }
+
     fn update_max_fitness(&mut self) {
         self.max_fitness = self
             .pool
@@ -635,6 +651,7 @@ impl Ai {
 
         self.current_individual = if individual_index == species_size - 1 {
             if species_index == pool_size - 1 {
+                self.save_snapshot();
                 self.next_generation();
                 println!(
                     "New generation (g = {}). Population = {}. Species = {}",

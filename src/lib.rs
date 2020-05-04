@@ -8,6 +8,8 @@ extern crate sdl2;
 extern crate simple_server;
 extern crate tungstenite;
 extern crate rand;
+extern crate serde;
+extern crate serde_json;
 
 pub mod ai;
 pub mod dashboard;
