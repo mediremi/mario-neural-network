@@ -19,22 +19,22 @@ const OUTPUT_NODES: usize = 2;
 const DESIRED_POPULATION: i64 = 300;
 
 // Maximum number of species in pool before weaker species are removed
-const MAX_SPECIES: usize = 30;
+const MAX_SPECIES: usize = 20;
 
 // Maximum number of generations that a species can exist for without
 // improving its performance
-const MAX_SPECIES_STALENESS: u64 = 15;
+const MAX_SPECIES_STALENESS: u64 = 10;
 
 // Threshold below which a compatibility distance implies that two individuals
 // are of the same species
-const COMPATIBILITY_THRESHOLD: f64 = 3.0;
+const COMPATIBILITY_THRESHOLD: f64 = 2.0;
 // Coefficients used when calculating compatibility distance of two individuals.
 // While the NEAT paper distinguishes between 'excess' and 'disjoint' genes,
 // here we use the term 'disjoint' to refer to both
 const DISJOINT_COEFFICIENT: f64 = 0.4;
 const WEIGHTS_COEFFICIENT: f64 = 0.1;
 
-const MUTATION_PROBABILITY: f64 = 0.2;
+const MUTATION_PROBABILITY: f64 = 0.3;
 
 impl Tile {
     fn as_nn_input(self) -> f64 {
@@ -55,8 +55,8 @@ pub struct Inputs {
 }
 
 pub struct AiOptions {
-    pub stuck_timeout_s: u64,
-    pub finish_timeout_s: u64,
+    pub stuck_timeout_ms: u64,
+    pub finish_timeout_ms: u64,
 }
 
 // TODO: Find better name for this
@@ -69,8 +69,8 @@ enum XState {
 }
 
 struct IndividualStateOptions {
-    stuck_timeout_s: u64,
-    finish_timeout_s: u64,
+    stuck_timeout_ms: u64,
+    finish_timeout_ms: u64,
 }
 
 struct IndividualState {
@@ -81,8 +81,8 @@ struct IndividualState {
     start: Instant,
     last_x: u16,
     last_x_update: Instant,
-    stuck_timeout_s: u64,
-    finish_timeout_s: u64,
+    stuck_timeout_ms: u64,
+    finish_timeout_ms: u64,
 }
 
 impl IndividualState {
@@ -95,8 +95,8 @@ impl IndividualState {
             start: Instant::now(),
             last_x: 0,
             last_x_update: Instant::now(),
-            stuck_timeout_s: options.stuck_timeout_s,
-            finish_timeout_s: options.finish_timeout_s,
+            stuck_timeout_ms: options.stuck_timeout_ms,
+            finish_timeout_ms: options.finish_timeout_ms,
         }
     }
 
@@ -104,8 +104,9 @@ impl IndividualState {
         use self::XState::*;
 
         let is_moving = self.game_state.mario_x != self.last_x;
-        let is_stuck = !is_moving && self.last_x_update.elapsed().as_secs() > self.stuck_timeout_s;
-        let took_too_long = self.start.elapsed().as_secs() > self.finish_timeout_s;
+        let is_stuck =
+            !is_moving && self.last_x_update.elapsed().as_millis() > self.stuck_timeout_ms.into();
+        let took_too_long = self.start.elapsed().as_millis() > self.finish_timeout_ms.into();
 
         if self.game_state.lives < self.previous_game_state.lives {
             self.state = Dead;
@@ -151,7 +152,7 @@ impl IndividualState {
 
     pub fn fitness(&self) -> u64 {
         let success_bonus = if self.has_succeeded() { 1000 } else { 0 };
-        (self.game_state.mario_x as u64 / (self.start.elapsed().as_secs() + 1)) + success_bonus
+        self.game_state.mario_x as u64 + success_bonus
     }
 }
 
@@ -202,17 +203,17 @@ impl Individual {
             Gene {
                 in_node: input_distribution.sample(&mut rng),
                 out_node: output_distribution.sample(&mut rng),
-                innovation_number: max_innovation_number + 1,
+                innovation_number: max_innovation_number,
                 weight: 1.0,
                 enabled: true,
             },
             Gene {
                 in_node: input_distribution.sample(&mut rng),
                 out_node: output_distribution.sample(&mut rng),
-                innovation_number: max_innovation_number + 2,
+                innovation_number: max_innovation_number + 1,
                 weight: 1.0,
                 enabled: true,
-            },
+            }
         ];
 
         Self {
@@ -295,8 +296,8 @@ pub struct Ai {
     // (species_index, individual_index)
     current_individual: (usize, usize),
     current_individual_state: IndividualState,
-    stuck_timeout_s: u64,
-    finish_timeout_s: u64,
+    stuck_timeout_ms: u64,
+    finish_timeout_ms: u64,
 }
 
 impl Ai {
@@ -305,12 +306,17 @@ impl Ai {
             pool: vec![
                 Species {
                     id: 0,
-                    members: vec![Individual::new(0)],
+                    members: vec![Individual::new(1)],
                     ..Species::default()
                 },
                 Species {
                     id: 1,
-                    members: vec![Individual::new(3)],
+                    members: vec![Individual::new(4)],
+                    ..Species::default()
+                },
+                Species {
+                    id: 2,
+                    members: vec![Individual::new(7)],
                     ..Species::default()
                 },
             ],
@@ -318,16 +324,12 @@ impl Ai {
             max_fitness: 0,
             current_individual: (0, 0),
             current_individual_state: IndividualState::new(IndividualStateOptions {
-                stuck_timeout_s: options.stuck_timeout_s,
-                finish_timeout_s: options.finish_timeout_s,
+                stuck_timeout_ms: options.stuck_timeout_ms,
+                finish_timeout_ms: options.finish_timeout_ms,
             }),
-            stuck_timeout_s: options.stuck_timeout_s,
-            finish_timeout_s: options.finish_timeout_s,
+            stuck_timeout_ms: options.stuck_timeout_ms,
+            finish_timeout_ms: options.finish_timeout_ms,
         }
-    }
-
-    fn adjusted_fitness(fitness: u64, species_size: u64) -> u64 {
-        fitness / species_size
     }
 
     fn cross_over(a: &Individual, b: &Individual) -> Individual {
@@ -495,6 +497,17 @@ impl Ai {
         Self::compatibility_distance(a, b) < COMPATIBILITY_THRESHOLD
     }
 
+    pub fn load_snapshot(&mut self, filename: &str) {
+        use std::fs::File;
+        use std::io::BufReader;
+        let file = File::open(filename).unwrap();
+        let reader = BufReader::new(file);
+        let snapshot: AiSnapshot = serde_json::from_reader(reader).unwrap();
+        self.pool = snapshot.pool;
+        self.generation = snapshot.generation;
+        self.next_generation();
+    }
+
     fn save_snapshot(&self) {
         use std::fs::File;
         let snapshot = AiSnapshot {
@@ -599,6 +612,11 @@ impl Ai {
     fn cross_over_between_species(&mut self) {
         let mut rng = rand::thread_rng();
         let children_needed = DESIRED_POPULATION - self.population();
+        let children_needed = if children_needed > 150 {
+            children_needed / 4
+        } else {
+            children_needed
+        };
         for _ in 0..rng.gen_range(0, children_needed) {
             let species: Vec<&Species> = self.pool.choose_multiple(&mut rng, 2).collect();
             let parent_a = species[0].members.choose(&mut rng).unwrap();
@@ -642,12 +660,11 @@ impl Ai {
 
     pub fn next_individual(&mut self) {
         let (species_index, individual_index) = self.current_individual;
-        let species_size = self.pool[species_index].len();
         let individual = &mut self.pool[species_index].members[individual_index];
-        individual.fitness =
-            Self::adjusted_fitness(self.current_individual_state.fitness(), species_size as u64);
+        individual.fitness = self.current_individual_state.fitness();
 
         let pool_size = self.pool.len();
+        let species_size = self.pool[species_index].len();
 
         self.current_individual = if individual_index == species_size - 1 {
             if species_index == pool_size - 1 {
@@ -668,8 +685,8 @@ impl Ai {
         };
 
         self.current_individual_state = IndividualState::new(IndividualStateOptions {
-            stuck_timeout_s: self.stuck_timeout_s,
-            finish_timeout_s: self.finish_timeout_s,
+            stuck_timeout_ms: self.stuck_timeout_ms,
+            finish_timeout_ms: self.finish_timeout_ms,
         });
     }
 

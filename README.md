@@ -2,11 +2,15 @@
 
 Based on [MarI/O](https://www.youtube.com/watch?v=qv6UVOQ0F44) by [SethBling](https://www.youtube.com/channel/UC8aG3LDTDwNR1UQhSn9uVrw).
 
-(put GIF here)
+![GIF showing AI in action](demo.gif)
 
 # Building
 
     cargo build --release
+
+# Running
+
+    make run
 
 # NES emulator code
 

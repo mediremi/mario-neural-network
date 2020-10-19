@@ -70,6 +70,7 @@ pub fn start(
     let save_state_path = emulator_options.save_state_path;
     let (mut cpu, mut gfx) = init_emulator(emulator_options);
     let mut ai = Ai::new(ai_options);
+    // ai.load_snapshot("snapshots/g-1.json");
     let dashboard = Dashboard::new(dashboard_options);
 
     let mut last_dashboard_update = Instant::now();

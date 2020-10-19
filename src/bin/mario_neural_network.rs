@@ -14,11 +14,11 @@ use std::path::Path;
 const ROM_PATH: &'static str = "super_mario.nes";
 const SCALE: Scale = Scale::Scale3x;
 const SAVE_STATE_PATH: &'static str = "state.sav";
-const VSYNC: bool = false;
+const VSYNC: bool = true;
 
 // AI options
-const STUCK_TIMEOUT_S: u64 = 1;
-const FINISH_TIMEOUT_S: u64 = 20;
+const STUCK_TIMEOUT_MS: u64 = 500;
+const FINISH_TIMEOUT_MS: u64 = 20_000;
 
 // Dashboard options
 const HOST: &'static str = "localhost";
@@ -34,8 +34,8 @@ fn main() {
             vsync: VSYNC,
         },
         AiOptions {
-            stuck_timeout_s: STUCK_TIMEOUT_S,
-            finish_timeout_s: FINISH_TIMEOUT_S,
+            stuck_timeout_ms: STUCK_TIMEOUT_MS,
+            finish_timeout_ms: FINISH_TIMEOUT_MS,
         },
         DashboardOptions {
             host: HOST,
